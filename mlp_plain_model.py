@@ -34,8 +34,8 @@ class MLPPlainModel(object):
         """
         self._config = config
         self._dir_output = dir_output
-        tf.reset_default_graph()  # Saveguard if previous model was defined
-        tf.set_random_seed(1)    # Set tensorflow seed for paper replication
+        # tf.reset_default_graph()  # Saveguard if previous model was defined
+        tf.random.set_seed(1)    # Set tensorflow seed for paper replication
 
 
     def build_train(self):
