@@ -16,15 +16,20 @@ def neural_net(tf_x, n_layer, n_neuron, lambd):
     # Set seed for Xavier initializer for paper replication
     layer = tf_x
     for i in range(1, n_layer+1):
-        layer = tf.compat.v1.layers.dense(layer, n_neuron, tf.nn.relu,
-                                kernel_initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform", seed=1))
-    output = tf.compat.v1.layers.dense(layer, 1)
+        if i == 1:
+            layer = tf.layers.dense(layer, n_neuron, tf.nn.relu,
+                                    kernel_initializer=tf.contrib.layers.xavier_initializer(seed=1),
+                                    kernel_regularizer=tf.contrib.layers.l1_regularizer(float(lambd)))
+        else:
+            layer = tf.layers.dense(layer, n_neuron, tf.nn.relu,
+                                    kernel_initializer = tf.contrib.layers.xavier_initializer(seed=1))
+    output = tf.layers.dense(layer, 1)
 
     return output
 
 
-class MLPPlainModel(object):
-    """Generic class for tf mlp models"""
+class MLPSparseModel(object):
+    """Generic class for tf l1-sparse mlp models"""
 
     def __init__(self, config, dir_output):
         """
@@ -34,9 +39,8 @@ class MLPPlainModel(object):
         """
         self._config = config
         self._dir_output = dir_output
-        tf.compat.v1.reset_default_graph()  # Saveguard if previous model was defined
+        # tf.reset_default_graph()  # Saveguard if previous model was defined
         tf.random.set_seed(1)    # Set tensorflow seed for paper replication
-        tf.compat.v1.disable_eager_execution()
 
 
     def build_train(self):
@@ -60,9 +64,9 @@ class MLPPlainModel(object):
 
     def _add_placeholders_op(self):
         """ Add placeholder attributes """
-        self.X = tf.compat.v1.placeholder("float", [None, self._config['num_input']])
-        self.Y = tf.compat.v1.placeholder("float", [None, 1])
-        self.lr = tf.compat.v1.placeholder("float")  # to schedule learning rate
+        self.X = tf.placeholder("float", [None, self._config['num_input']])
+        self.Y = tf.placeholder("float", [None, 1])
+        self.lr = tf.placeholder("float")  # to schedule learning rate
 
 
     def _add_pred_op(self):
@@ -72,10 +76,12 @@ class MLPPlainModel(object):
                                  self._config['num_neuron'],
                                  self._config['lambda'])
 
+
     def _add_loss_op(self):
         """Defines self.loss"""
-        l2_loss = tf.compat.v1.losses.get_regularization_loss()
-        self.loss = l2_loss + tf.compat.v1.losses.mean_squared_error(self.Y, self.output)
+        l2_loss = tf.losses.get_regularization_loss()
+        self.loss = l2_loss + tf.losses.mean_squared_error(self.Y, self.output)
+
 
     def _add_train_op(self, loss):
         """Defines self.train_op that performs an update on a batch
@@ -85,9 +91,9 @@ class MLPPlainModel(object):
             loss: (tensor) tf.float32 loss to minimize
 
         """
-        optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
 
-        update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             grads, vs     = zip(*optimizer.compute_gradients(loss))
             grads, gnorm  = tf.clip_by_global_norm(grads, 1)
@@ -96,8 +102,8 @@ class MLPPlainModel(object):
 
     def init_session(self):
         """Defines self.sess, self.saver and initialize the variables"""
-        self.sess = tf.compat.v1.Session()
-        self.sess.run(tf.compat.v1.global_variables_initializer())
+        self.sess = tf.Session()
+        self.sess.run(tf.global_variables_initializer())
 
 
     def train(self, X_matrix, perf_value, lr_initial):
@@ -127,7 +133,7 @@ class MLPPlainModel(object):
             for minibatch in minibatches:
                 (minibatch_X, minibatch_Y) = minibatch
                 _, t_l, pred = self.sess.run([self.train_op, self.loss, self.output],
-                                             {self.X : X_matrix, self.Y: perf_value, self.lr: lr})
+                                             {self.X: X_matrix, self.Y: perf_value, self.lr: lr})
                 minibatch_loss += t_l/num_minibatches
 
             if epoch % 500 == 0 or epoch == 1:
@@ -140,7 +146,7 @@ class MLPPlainModel(object):
 #                if np.abs(minibatch_loss-l_old)/minibatch_loss < 1e-8:
 #                    break;
 
-            # Store the old cost function
+#            # Store the old cost function
 #            l_old = minibatch_loss
 
             # Decay learning rate
