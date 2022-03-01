@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-ne", "20", "-ss", "11", "LLVM"]
+            "args": ["-ne", "1", "-ss", "11", "LLVM"]
         }
     ]
 }
