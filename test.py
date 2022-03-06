@@ -5,18 +5,19 @@ import keras_tuner as kt
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
+import argparse
 
 class HyperModel:
 
     def __init__(self, path):
         self.provide_dataset(path)
 
-    def provide_dataset(self, path):
+    def provide_dataset(self, path, label):
         # get dataset
         self._dataset = pd.read_csv("Data/LLVM_AllNumeric.csv")
         self._dataset = self._dataset.sample(frac=1)
         self._dataset_features = self._dataset.copy()
-        self._dataset_labels = self._dataset_features.pop('PERF')
+        self._dataset_labels = self._dataset_features.pop(label)
 
         # normalize dataset (MinMaxScale)
         self._features_max = self._dataset_features.max()
@@ -94,5 +95,24 @@ class HyperModel:
         print(np.concatenate((test, predictions*self._labels_max), axis=1))
 
 if __name__ == "__main__":
-    hyper_model = HyperModel("Data/LLVM_AllNumeric.csv")
-    hyper_model.main()
+
+    parser = argparse.ArgumentParser(
+        description="This program either generates a model to predict the provided label or uses an exisiting model to predict the passed input"
+    )
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-p", "--path", action="store", dest="csv_path", type=str, help="Path to csv file")
+    group.add_argument("-c", "--conf", action="store", dest="conf", type=list, help="The configuration to use as input for the model")
+    parser.add_argument("-l", action="store", dest="label", type=str, help="The label to predict")
+    parser.add_argument("-mp", action="store", dest="model_path", type=str, help="Path to the saved model")
+
+    args = parser.parse_args()
+    
+    if args.csv_path and args.label is None:
+        parser.error("-p required -l")
+    elif args.csv_path and args.label:
+        hyper_model = HyperModel(args.csv_path, args.label)
+        hyper_model.main()
+    elif args.conf and args.model_path is None:
+        parser.error("-c required -mp")
+    elif args.conf and args.model_path:
+        
