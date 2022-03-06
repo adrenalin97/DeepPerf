@@ -6,78 +6,93 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 
-# get dataset
-dataset = pd.read_csv("Data/LLVM_AllNumeric.csv")
-dataset = dataset.sample(frac=1)
-dataset_features = dataset.copy()
-dataset_labels = dataset_features.pop('PERF')
+class HyperModel:
 
-# normalize dataset (MinMaxScale)
-features_max = dataset_features.max()
-labels_max = dataset_labels.max()
-dataset_features /= features_max
-dataset_labels /= dataset_labels.max()
+    def __init__(self, path):
+        self.provide_dataset(path)
 
-# split dataset train (2/3) test (1/3)
-x, x_test, y, y_test = train_test_split(dataset_features, dataset_labels, test_size=0.33)
+    def provide_dataset(self, path):
+        # get dataset
+        self._dataset = pd.read_csv("Data/LLVM_AllNumeric.csv")
+        self._dataset = self._dataset.sample(frac=1)
+        self._dataset_features = self._dataset.copy()
+        self._dataset_labels = self._dataset_features.pop('PERF')
 
-def build_model(hp):
-    model = keras.Sequential()
-    model.add(keras.layers.Flatten())
-    for i in range(hp.Int("num_layers", 1, 11)):
-        model.add(
-            keras.layers.Dense(
-                units=hp.Int(f"units_{i}", min_value=8, max_value=256, step=8),
-                activation=hp.Choice("activation", ["relu", "tanh", "sigmoid"])
+        # normalize dataset (MinMaxScale)
+        self._features_max = self._dataset_features.max()
+        self._labels_max = self._dataset_labels.max()
+        self._dataset_features /= self._features_max
+        self._dataset_labels /= self._dataset_labels.max()
+
+        # split dataset train (2/3) test (1/3)
+        self._x, self._x_test, self._y, self._y_test = train_test_split(self._dataset_features, self._dataset_labels, test_size=0.33)
+
+    def build_model(self, hp):
+        self._model = keras.Sequential()
+        self._model.add(keras.layers.Flatten())
+        for i in range(hp.Int("num_layers", 1, 11)):
+            self._model.add(
+                keras.layers.Dense(
+                    units=hp.Int(f"units_{i}", min_value=8, max_value=256, step=8),
+                    activation=hp.Choice("activation", ["relu", "tanh", "sigmoid"])
+                )
             )
+        if hp.Boolean("dropout"):
+            self._model.add(keras.layers.Dropout(rate=hp.Choice("dr", [0.25, 0.5])))
+        self._model.add(keras.layers.Dense(1))
+        learning_rate = hp.Float("lr", min_value=1e-4, max_value=1e-1, sampling="log")
+        self._model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+            loss="mean_squared_error",
+            metrics=[keras.metrics.MeanSquaredError()]
         )
-    if hp.Boolean("dropout"):
-        model.add(keras.layers.Dropout(rate=hp.Choice("dr", [0.25, 0.5])))
-    model.add(keras.layers.Dense(1))
-    learning_rate = hp.Float("lr", min_value=1e-4, max_value=1e-1, sampling="log")
-    model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-        loss="mean_squared_error",
-        metrics=[keras.metrics.MeanSquaredError()]
-    )
-    return model
 
-tuner = kt.BayesianOptimization(
-    hypermodel = build_model,
-    objective="mean_squared_error",
-    max_trials=10,
-    overwrite=True,
-    directory="my_tuner",
-    project_name="feature_degradation",
-)
-
-es = keras.callbacks.EarlyStopping(
-    monitor="mean_squared_error",
-    patience=5,
-    restore_best_weights=True
-)
-
-tuner.search_space_summary()
-
-x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2)
-
-tuner.search(x_train, y_train, epochs=10, validation_data=(x_val, y_val), callbacks=[es])
-
-tuner.results_summary()
-
-best_hps = tuner.get_best_hyperparameters(5)
-model = build_model(best_hps[0])
-history = model.fit(x_train, y_train, batch_size=20, epochs=10, validation_data=(x_val, y_val),)
-
-keras.utils.plot_model(model, "model.png", show_shapes=True)
-
-print("Evaluate on test data")
-results = model.evaluate(x_test, y_test, batch_size=5)
-print("test loss, test msqe:", results)
-
-print("Generate predictions for 3 samples")
-test = x_test[:3]
-print(test, predictions*labels_max)
-predictions = model.predict(test)
+        return self._model
 
 
+    def get_best_hyperparams(self):
+        self._tuner = kt.BayesianOptimization(
+            hypermodel = self.build_model,
+            objective="mean_squared_error",
+            max_trials=10,
+            overwrite=True,
+            directory="my_tuner",
+            project_name="feature_degradation",
+        )
+
+        self._es = keras.callbacks.EarlyStopping(
+            monitor="mean_squared_error",
+            patience=5,
+            restore_best_weights=True
+        )
+
+        self._tuner.search_space_summary()
+
+        self._x_train, self._x_val, self._y_train, self._y_val = train_test_split(self._x, self._y, test_size=0.2)
+
+        self._tuner.search(self._x_train, self._y_train, epochs=10, validation_data=(self._x_val, self._y_val), callbacks=[self._es])
+
+        self._tuner.results_summary()
+
+        self._best_hps = self._tuner.get_best_hyperparameters(5)
+
+        return self._best_hps[0]
+    
+    def main(self):
+        model = self.build_model(self.get_best_hyperparams())
+        history = model.fit(self._x_train, self._y_train, batch_size=20, epochs=10, validation_data=(self._x_val, self._y_val),)
+
+        keras.utils.plot_model(model, "model.png", show_shapes=True)
+
+        print("Evaluate on test data")
+        results = model.evaluate(self._x_test, self._y_test, batch_size=5)
+        print("test loss, test msqe:", results)
+
+        print("Generate predictions for 3 samples")
+        test = self._x_test[:3]
+        predictions = model.predict(test)
+        print(np.concatenate((test, predictions*self._labels_max), axis=1))
+
+if __name__ == "__main__":
+    hyper_model = HyperModel("Data/LLVM_AllNumeric.csv")
+    hyper_model.main()
