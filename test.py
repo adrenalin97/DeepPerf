@@ -9,8 +9,8 @@ import argparse
 
 class HyperModel:
 
-    def __init__(self, path):
-        self.provide_dataset(path)
+    def __init__(self, path, label):
+        self.provide_dataset(path, label)
 
     def provide_dataset(self, path, label):
         # get dataset
@@ -93,6 +93,10 @@ class HyperModel:
         test = self._x_test[:3]
         predictions = model.predict(test)
         print(np.concatenate((test, predictions*self._labels_max), axis=1))
+        model.save("generated_model")
+        with open('generated_model/max_y.txt', 'w') as f:
+            f.write('%d' % self._labels_max)
+            f.close()
 
 if __name__ == "__main__":
 
@@ -101,7 +105,7 @@ if __name__ == "__main__":
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-p", "--path", action="store", dest="csv_path", type=str, help="Path to csv file")
-    group.add_argument("-c", "--conf", action="store", dest="conf", type=list, help="The configuration to use as input for the model")
+    group.add_argument("-c", "--conf", action="store", dest="conf", type=str, help="The configuration to use as input for the model")
     parser.add_argument("-l", action="store", dest="label", type=str, help="The label to predict")
     parser.add_argument("-mp", action="store", dest="model_path", type=str, help="Path to the saved model")
 
@@ -115,4 +119,9 @@ if __name__ == "__main__":
     elif args.conf and args.model_path is None:
         parser.error("-c required -mp")
     elif args.conf and args.model_path:
-        
+        model = keras.models.load_model(args.model_path)
+        x_pred = np.array([list(map(int,args.conf.split()))])
+        y_pred = model.predict(x=x_pred)
+        with open(f'{args.model_path}/max_y.txt', 'r') as f:
+            y_max = float(f.readlines()[-1])
+        print(y_pred*y_max)
