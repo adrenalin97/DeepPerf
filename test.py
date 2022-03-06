@@ -60,28 +60,34 @@ class HyperModel:
             directory="my_tuner",
             project_name="feature_degradation",
         )
-
         self._es = keras.callbacks.EarlyStopping(
             monitor="mean_squared_error",
             patience=5,
             restore_best_weights=True
         )
-
         self._tuner.search_space_summary()
-
         self._x_train, self._x_val, self._y_train, self._y_val = train_test_split(self._x, self._y, test_size=0.2)
-
-        self._tuner.search(self._x_train, self._y_train, epochs=10, validation_data=(self._x_val, self._y_val), callbacks=[self._es])
-
+        self._tuner.search(
+            self._x_train, 
+            self._y_train, 
+            epochs=10, 
+            validation_data=(self._x_val, self._y_val), 
+            callbacks=[self._es]
+        )
         self._tuner.results_summary()
-
         self._best_hps = self._tuner.get_best_hyperparameters(5)
 
         return self._best_hps[0]
     
     def main(self):
         model = self.build_model(self.get_best_hyperparams())
-        history = model.fit(self._x_train, self._y_train, batch_size=20, epochs=10, validation_data=(self._x_val, self._y_val),)
+        history = model.fit(
+            self._x_train, 
+            self._y_train, 
+            batch_size=20, 
+            epochs=10, 
+            validation_data=(self._x_val, self._y_val)
+        )
 
         keras.utils.plot_model(model, "model.png", show_shapes=True)
 
@@ -106,8 +112,8 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-p", "--path", action="store", dest="csv_path", type=str, help="Path to csv file")
     group.add_argument("-c", "--conf", action="store", dest="conf", type=str, help="The configuration to use as input for the model")
-    parser.add_argument("-l", action="store", dest="label", type=str, help="The label to predict")
-    parser.add_argument("-mp", action="store", dest="model_path", type=str, help="Path to the saved model")
+    parser.add_argument("-l", "--label", action="store", dest="label", type=str, help="The label to predict")
+    parser.add_argument("-mp", "--model-path", action="store", dest="model_path", type=str, help="Path to the saved model")
 
     args = parser.parse_args()
     
