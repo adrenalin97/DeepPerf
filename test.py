@@ -41,7 +41,12 @@ class HyperModel:
         if hp.Boolean("dropout"):
             self._model.add(keras.layers.Dropout(rate=hp.Choice("dr", [0.25, 0.5])))
         self._model.add(keras.layers.Dense(1))
-        learning_rate = hp.Float("lr", min_value=1e-4, max_value=1e-1, sampling="log")
+        learning_rate = hp.Float(
+            "lr", 
+            min_value=1e-4, 
+            max_value=1e-1, 
+            sampling="log"
+        )
         self._model.compile(
             optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
             loss="mean_squared_error",
@@ -92,7 +97,11 @@ class HyperModel:
         keras.utils.plot_model(model, "model.png", show_shapes=True)
 
         print("Evaluate on test data")
-        results = model.evaluate(self._x_test, self._y_test, batch_size=5)
+        results = model.evaluate(
+            self._x_test, 
+            self._y_test, 
+            batch_size=5
+        )
         print("test loss, test msqe:", results)
 
         print("Generate predictions for 3 samples")
