@@ -14,7 +14,7 @@ class HyperModel:
 
     def provide_dataset(self, path, label):
         # get dataset
-        self._dataset = pd.read_csv("Data/LLVM_AllNumeric.csv")
+        self._dataset = pd.read_csv(path)
         self._dataset = self._dataset.sample(frac=1)
         self._dataset_features = self._dataset.copy()
         self._dataset_labels = self._dataset_features.pop(label)
