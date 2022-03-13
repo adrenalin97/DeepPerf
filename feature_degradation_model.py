@@ -33,7 +33,7 @@ class HyperModel:
     def build_model(self, hp):
         self._model = keras.Sequential()
         self._model.add(keras.layers.Flatten())
-        for i in range(hp.Int("num_layers", 1, 11)):
+        for i in range(hp.Int("num_layers", 1, 5)):
             self._model.add(
                 keras.layers.Dense(
                     units=hp.Int(f"units_{i}", min_value=8, max_value=256, step=8),
@@ -56,7 +56,6 @@ class HyperModel:
         )
 
         return self._model
-
 
     def get_best_hyperparams(self):
         self._tuner = kt.BayesianOptimization(
@@ -86,8 +85,6 @@ class HyperModel:
 
         return self._best_hps[0]
     
-    #@title Define the plotting function.
-
     def plot_the_loss_curve(self, epochs, mse):
         plt.figure()
         plt.xlabel("Epoch")
@@ -129,6 +126,7 @@ class HyperModel:
         predictions = model.predict(test)
         print("Testing on:\n",test)
         print("Predictions:\n", predictions*self._labels_max)
+        print("real values \n", np.array([self._dataset['PERF'][test.index]]).transpose())
         model.save("generated_model", overwrite=True)
         with open('generated_model/max_y.txt', 'w') as f:
             f.write('%d' % self._labels_max)
