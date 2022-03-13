@@ -4,6 +4,7 @@ from tensorflow import keras
 from keras import layers
 import keras_tuner as kt
 from sklearn.model_selection import train_test_split
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import argparse
@@ -39,8 +40,8 @@ class HyperModel:
                     activation=hp.Choice("activation", ["relu", "tanh", "sigmoid"])
                 )
             )
-        if hp.Boolean("dropout"):
-            self._model.add(keras.layers.Dropout(rate=hp.Choice("dr", [0.25, 0.5])))
+        
+        self._model.add(keras.layers.Dropout(rate=hp.Choice("dr", [0.25, 0.5])))
         self._model.add(keras.layers.Dense(1))
         learning_rate = hp.Float(
             "lr", 
@@ -76,7 +77,7 @@ class HyperModel:
         self._tuner.search(
             self._x_train, 
             self._y_train, 
-            epochs=10, 
+            epochs=40, 
             validation_data=(self._x_val, self._y_val), 
             callbacks=[self._es]
         )
@@ -85,16 +86,34 @@ class HyperModel:
 
         return self._best_hps[0]
     
+    #@title Define the plotting function.
+
+    def plot_the_loss_curve(self, epochs, mse):
+        plt.figure()
+        plt.xlabel("Epoch")
+        plt.ylabel("Mean Squared Error")
+
+        plt.plot(epochs, mse, label="Loss")
+        plt.legend()
+        plt.ylim([mse.min()*0.95, mse.max() * 1.03])
+        plt.savefig("mse_per_epoch.png")
+
     def main(self):
         model = self.build_model(self.get_best_hyperparams())
         history = model.fit(
             self._x_train, 
             self._y_train, 
-            batch_size=20, 
-            epochs=20, 
+            batch_size=5, 
+            epochs=30, 
             validation_data=(self._x_val, self._y_val)
         )
 
+        epochs = history.epoch
+
+        hist = pd.DataFrame(history.history)
+        mse = hist["mean_squared_error"]
+
+        self.plot_the_loss_curve(epochs, mse)
         keras.utils.plot_model(model, "model.png", show_shapes=True)
 
         print("Evaluate on test data")
@@ -110,7 +129,7 @@ class HyperModel:
         predictions = model.predict(test)
         print("Testing on:\n",test)
         print("Predictions:\n", predictions*self._labels_max)
-        model.save("generated_model")
+        model.save("generated_model", overwrite=True)
         with open('generated_model/max_y.txt', 'w') as f:
             f.write('%d' % self._labels_max)
             f.close()
