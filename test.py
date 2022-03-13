@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import tensorflow as tf
 from tensorflow import keras
 from keras import layers
@@ -44,7 +45,7 @@ class HyperModel:
         learning_rate = hp.Float(
             "lr", 
             min_value=1e-4, 
-            max_value=1e-1, 
+            max_value=1e-2, 
             sampling="log"
         )
         self._model.compile(
@@ -61,9 +62,9 @@ class HyperModel:
             hypermodel = self.build_model,
             objective="mean_squared_error",
             max_trials=10,
-            overwrite=True,
-            directory="my_tuner",
-            project_name="feature_degradation",
+            # overwrite=True,
+            # directory="my_tuner",
+            # project_name="feature_degradation",
         )
         self._es = keras.callbacks.EarlyStopping(
             monitor="mean_squared_error",
@@ -127,12 +128,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if args.csv_path and args.label is None:
-        parser.error("-p required -l")
+        parser.error("-p requires -l")
     elif args.csv_path and args.label:
         hyper_model = HyperModel(args.csv_path, args.label)
         hyper_model.main()
     elif args.conf and args.model_path is None:
-        parser.error("-c required -mp")
+        parser.error("-c requires -mp")
     elif args.conf and args.model_path:
         model = keras.models.load_model(args.model_path)
         x_pred = np.array([list(map(int,args.conf.split()))])
