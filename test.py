@@ -62,9 +62,9 @@ class HyperModel:
             hypermodel = self.build_model,
             objective="mean_squared_error",
             max_trials=10,
-            # overwrite=True,
-            # directory="my_tuner",
-            # project_name="feature_degradation",
+            overwrite=True,
+            directory="my_tuner",
+            project_name="feature_degradation",
         )
         self._es = keras.callbacks.EarlyStopping(
             monitor="mean_squared_error",
@@ -91,7 +91,7 @@ class HyperModel:
             self._x_train, 
             self._y_train, 
             batch_size=20, 
-            epochs=10, 
+            epochs=20, 
             validation_data=(self._x_val, self._y_val)
         )
 
@@ -108,7 +108,8 @@ class HyperModel:
         print("Generate predictions for 3 samples")
         test = self._x_test[:3]
         predictions = model.predict(test)
-        print(np.concatenate((test, predictions*self._labels_max), axis=1))
+        print("Testing on:\n",test)
+        print("Predictions:\n", predictions*self._labels_max)
         model.save("generated_model")
         with open('generated_model/max_y.txt', 'w') as f:
             f.write('%d' % self._labels_max)
