@@ -8,18 +8,20 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import argparse
+import subprocess
 
 class HyperModel:
 
-    def __init__(self, path, label):
-        self.provide_dataset(path, label)
+    def __init__(self, args):
+        self._args = args
+        self.provide_dataset()
 
-    def provide_dataset(self, path, label):
+    def provide_dataset(self):
         # get dataset
-        self._dataset = pd.read_csv(path)
+        self._dataset = pd.read_csv(self._args.csv_path)
         self._dataset = self._dataset.sample(frac=1)
         self._dataset_features = self._dataset.copy()
-        self._dataset_labels = self._dataset_features.pop(label)
+        self._dataset_labels = self._dataset_features.pop(self._args.label)
 
         # normalize dataset (MinMaxScale)
         self._features_max = self._dataset_features.max()
@@ -127,8 +129,8 @@ class HyperModel:
         print("Testing on:\n",test)
         print("Predictions:\n", predictions*self._labels_max)
         print("real values \n", np.array([self._dataset['PERF'][test.index]]).transpose())
-        model.save("generated_model", overwrite=True)
-        with open('generated_model/max_y.txt', 'w') as f:
+        model.save(self._args.model_path, overwrite=True)
+        with open(f'{self._args.model_path}/max_y.txt', 'w') as f:
             f.write('%d' % self._labels_max)
             f.close()
 
@@ -140,16 +142,65 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-p", "--path", action="store", dest="csv_path", type=str, help="Path to csv file")
     group.add_argument("-c", "--conf", action="store", dest="conf", type=str, help="The configuration to use as input for the model")
+    group.add_argument("-fm", "--feature-model", action="store", dest="feature_model", type=str, help="Path to a feature model as a .xml file")
     parser.add_argument("-l", "--label", action="store", dest="label", type=str, help="The label to predict")
-    parser.add_argument("-mp", "--model-path", action="store", dest="model_path", type=str, help="Path to the saved model")
+    parser.add_argument("-mp", "--model-path", action="store", dest="model_path", default="./generated_model/", type=str, help="Path to the saved model")
+    parser.add_argument("-ss",
+                        "--sampling-strategy", 
+                        action="store", 
+                        choices=["RandomConfiguration", "TWiseConfiguration"], 
+                        dest="sampling_strategy", 
+                        type=str, 
+                        help="The sampling strategy used to generate configurations needed to train the model")
+    parser.add_argument("-t", action="store", dest="t", type=int, choices=[1,2,3], help="The value of t for t-wise configuration generation")
+    parser.add_argument("-m",
+                        "--max-number", action="store", dest="max_number", 
+                        type=int, 
+                        help="The maximum number of configurations to generate while random sampling")
+    parser.add_argument("-d", "--dest-csv", action="store", dest="dest_csv", default='products.csv', type=str, help="Destination path for the generated .csv file")
+    
 
     args = parser.parse_args()
     
     if args.csv_path and args.label is None:
         parser.error("-p requires -l")
     elif args.csv_path and args.label:
-        hyper_model = HyperModel(args.csv_path, args.label)
+        hyper_model = HyperModel(args)
         hyper_model.main()
+    elif args.feature_model and ((args.dest_csv or args.sampling_strategy) is None):
+        parser.error("-fm requires -d and -ss")
+    elif args.sampling_strategy == 'RandomConfiguration' and args.max_number is None:
+        parser.error("RandomConfiguration requires -m")
+    elif args.sampling_strategy == 'TWiseConfiguration' and args.t is None:
+        parser.error("TWiseConfiguration requires -t")
+    elif args.sampling_strategy == 'RandomConfiguration' and args.feature_model and (args.t or args.max_number):
+        subprocess.run([
+            'java', 
+            '-jar', 
+            'createDataset.jar', 
+            '-fm', 
+            f'{args.feature_model}', 
+            '-ss', 
+            f'{args.sampling_strategy}', 
+            '-m', 
+            f'{args.max_number}', 
+            '-c', 
+            f'{args.dest_csv}'
+        ])
+    elif args.sampling_strategy is 'TWiseConfiguration' and args.feature_model and (args.t or args.max_number):
+        subprocess.run([
+            'java', 
+            '-jar', 
+            'createDataset.jar', 
+            '-fm', 
+            f'{args.feature_model}', 
+            '-ss', 
+            f'{args.sampling_strategy}', 
+            '-t', 
+            f'{args.t}', 
+            '-c', 
+            f'{args.dest_csv}'
+        ])
     elif args.conf and args.model_path is None:
         parser.error("-c requires -mp")
     elif args.conf and args.model_path:

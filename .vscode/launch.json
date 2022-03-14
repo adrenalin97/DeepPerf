@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-ne", "1", "-ss", "11", "LLVM"]
+            "args": ["-fm", "bc_v1.xml", "-ss", "RandomConfiguration", "-m", "10", "-d", "products.csv"]
         }
     ]
 }
