@@ -128,7 +128,7 @@ class HyperModel:
         predictions = model.predict(test)
         print("Testing on:\n",test)
         print("Predictions:\n", predictions*self._labels_max)
-        print("real values \n", np.array([self._dataset['PERF'][test.index]]).transpose())
+        print("real values \n", np.array([self._dataset[args.label][test.index]]).transpose())
         model.save(self._args.model_path, overwrite=True)
         with open(f'{self._args.model_path}/max_y.txt', 'w') as f:
             f.write('%d' % self._labels_max)
