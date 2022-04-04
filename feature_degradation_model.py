@@ -173,7 +173,7 @@ if __name__ == "__main__":
         parser.error("RandomConfiguration requires -m")
     elif args.sampling_strategy == 'TWiseConfiguration' and args.t is None:
         parser.error("TWiseConfiguration requires -t")
-    elif args.sampling_strategy == 'RandomConfiguration' and args.feature_model and (args.t or args.max_number):
+    elif args.sampling_strategy == 'RandomConfiguration' and args.feature_model and args.max_number:
         subprocess.run([
             'java', 
             '-jar', 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
             '-c', 
             f'{args.dest_csv}'
         ])
-    elif args.sampling_strategy is 'TWiseConfiguration' and args.feature_model and (args.t or args.max_number):
+    elif args.sampling_strategy is 'TWiseConfiguration' and args.feature_model and args.t:
         subprocess.run([
             'java', 
             '-jar', 

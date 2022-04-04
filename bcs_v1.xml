@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <extendedFeatureModel>
 	<properties>
-		<graphics key="showhiddenfeatures" value="true"/>
+		<graphics key="autolayoutconstraints" value="false"/>
 		<graphics key="legendautolayout" value="true"/>
 		<graphics key="showshortnames" value="false"/>
 		<graphics key="layout" value="vertical"/>
@@ -13,26 +13,47 @@
 		<and abstract="true" mandatory="true" name="BodyComfortSystem">
 			<graphics key="collapsed" value="false"/>
 			<and mandatory="true" name="Wiper">
-				<feature name="Clean"/>
+				<graphics key="collapsed" value="false"/>
+				<feature name="Clean">
+					<attribute name="MTTF" type="double" unit="y" value="10.0"/>
+				</feature>
 				<alt mandatory="true" name="Sensor">
-					<feature name="Low_Quality_Sensor"/>
-					<feature name="High_Quality_Sensor"/>
+					<graphics key="collapsed" value="false"/>
+					<feature name="Low_Quality_Sensor">
+						<attribute name="MTTF" type="double" unit="y" value="10.0"/>
+					</feature>
+					<feature name="High_Quality_Sensor">
+						<attribute name="MTTF" type="double" unit="y" value="12.0"/>
+					</feature>
 				</alt>
 				<and name="Frost_Protection">
-					<feature name="Clean_Protection"/>
-					<feature mandatory="true" name="Sensor_Protection"/>
-					<feature name="Permanent_Protection"/>
+					<graphics key="collapsed" value="false"/>
+					<feature name="Clean_Protection">
+						<attribute name="MTTF" type="double" unit="y" value="1.0"/>
+						<attribute name="ACTION" type="string" unit="" value="Clean"/>
+					</feature>
+					<feature mandatory="true" name="Sensor_Protection">
+						<attribute name="MTTF" type="double" unit="y" value="1.0"/>
+						<attribute name="ACTION" type="string" unit="" value="Sensor"/>
+					</feature>
 				</and>
-				<and name="Permanent">
-					<feature name="Intensity"/>
-				</and>
-				<alt mandatory="true" name="Wiper_Quality">
-					<feature name="Low_Quality_Wiper"/>
-					<feature name="High_Quality_Wiper"/>
+				<alt abstract="true" mandatory="true" name="Wiper_Quality">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
+					<feature name="Low_Quality_Wiper">
+						<attribute name="MTTF" type="double" unit="y" value="0.3"/>
+					</feature>
+					<feature name="High_Quality_Wiper">
+						<attribute name="MTTF" type="double" unit="y" value="0.5"/>
+					</feature>
 				</alt>
 			</and>
 			<and mandatory="true" name="HMI">
+				<graphics key="collapsed" value="false"/>
 				<or name="StatusLED">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="MTTF" type="double" unit="y" value="12.0"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
 					<feature name="LED_Wiper"/>
 					<feature name="LED_Frost_Protection"/>
 					<feature name="LED_Clean"/>
@@ -45,31 +66,82 @@
 				</or>
 			</and>
 			<and mandatory="true" name="DoorSystem">
+				<graphics key="collapsed" value="false"/>
+				<attribute name="DET" type="boolean" unit="" value="true"/>
 				<and mandatory="true" name="EM">
-					<feature mandatory="true" name="Electric"/>
+					<graphics key="collapsed" value="false"/>
+					<attribute name="MTTF" type="double" unit="y" value="12.0"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
+					<feature mandatory="true" name="Electrical"/>
 					<feature name="Heatable"/>
 				</and>
 				<and mandatory="true" name="PW">
-					<feature mandatory="true" name="FP"/>
+					<graphics key="collapsed" value="false"/>
+					<feature mandatory="true" name="FP">
+						<attribute name="MTTF" type="double" unit="y" value="-1.0"/>
+						<attribute name="ACTION" type="string" unit="" value="PW_Control"/>
+					</feature>
 					<alt abstract="true" mandatory="true" name="PW_Control">
-						<feature name="Manual_PW"/>
-						<feature name="Automatic_PW"/>
+						<graphics key="collapsed" value="false"/>
+						<attribute name="DET" type="boolean" unit="" value="true"/>
+						<feature name="Manual_PW">
+							<attribute name="MTTF" type="double" unit="y" value="12.0"/>
+						</feature>
+						<feature name="Automatic_PW">
+							<attribute name="MTTF" type="double" unit="y" value="8.0"/>
+						</feature>
 					</alt>
 				</and>
 			</and>
 			<and name="Security">
+				<graphics key="collapsed" value="false"/>
 				<and name="CLS">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="MTTF" type="double" unit="y" value="5.0"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
 					<feature name="Automatic_Locking"/>
 				</and>
 				<and name="RCK">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="MTTF" type="double" unit="y" value="3.5"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
 					<feature name="Control_Automatic_PW"/>
 					<feature name="Safety_Function"/>
 					<feature name="Adjust_EM"/>
 					<feature name="Control_AS"/>
 				</and>
 				<and name="AS">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
+					<attribute name="MTTF" type="double" unit="y" value="5.0"/>
 					<feature name="Interior_Monitoring"/>
 				</and>
+			</and>
+			<and mandatory="true" name="Electric">
+				<graphics key="collapsed" value="false"/>
+				<attribute name="DET" type="boolean" unit="" value="true"/>
+				<alt mandatory="true" name="BatterySystem">
+					<graphics key="collapsed" value="false"/>
+					<attribute name="MTTF" type="double" unit="y" value="10.0"/>
+					<attribute name="DET" type="boolean" unit="" value="true"/>
+					<feature name="75kwh"/>
+					<feature name="100kwh"/>
+				</alt>
+				<feature mandatory="true" name="ElectroMotor">
+					<attribute name="DET" type="boolean" unit="" value="true"/>
+					<attribute name="MTTF" type="double" unit="y" value="12.0"/>
+				</feature>
+				<alt mandatory="true" name="ChargingBehaviour">
+					<graphics key="collapsed" value="false"/>
+					<feature name="Fast">
+						<attribute name="MTTF" type="double" unit="y" value="-1.0"/>
+						<attribute name="ACTION" type="string" unit="" value="BatterySystem"/>
+					</feature>
+					<feature name="Normal">
+						<attribute name="MTTF" type="double" unit="y" value="-0.0"/>
+						<attribute name="ACTION" type="string" unit="" value="BatterySystem"/>
+					</feature>
+				</alt>
 			</and>
 		</and>
 	</struct>
@@ -116,12 +188,6 @@
 			<imp>
 				<var>Clean_Protection</var>
 				<var>Clean</var>
-			</imp>
-		</rule>
-		<rule>
-			<imp>
-				<var>Permanent_Protection</var>
-				<var>Permanent</var>
 			</imp>
 		</rule>
 		<rule>
