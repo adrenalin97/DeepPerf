@@ -56,7 +56,6 @@ class HyperModel:
             loss="mean_squared_error",
             metrics=[keras.metrics.MeanSquaredError()]
         )
-
         return self._model
 
     def get_best_hyperparams(self):
